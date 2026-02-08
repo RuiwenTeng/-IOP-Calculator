@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPV + C₃F₈ Postoperative Altitude Travel Risk Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #27ae60;
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 0.95em;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+        .input-group {
+            margin: 18px 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        label {
+            display: inline-block;
+            width: 300px;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 15px;
+        }
+        input {
+            padding: 10px;
+            width: 220px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #27ae60;
+            outline: none;
+        }
+        .unit {
+            color: #7f8c8d;
+            margin-left: 8px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #27ae60;
+            color: white;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 600;
+            margin-top: 25px;
+            width: 100%;
+            transition: background-color 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        button:hover {
+            background-color: #229954;
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        #result {
+            margin-top: 30px;
+            padding: 25px;
+            background-color: #fafafa;
+            border-left: 6px solid #27ae60;
+            border-radius: 8px;
+            display: none;
+            line-height: 1.6;
+        }
+        .risk-green { border-left-color: #27ae60; background-color: #f1f8f2; }
+        .risk-yellow { border-left-color: #f1c40f; background-color: #fefae9; }
+        .risk-orange { border-left-color: #f39c12; background-color: #fdf5e8; }
+        .risk-red { border-left-color: #e74c3c; background-color: #fdedec; }
+        
+        .risk-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .risk-green .risk-title { color: #27ae60; }
+        .risk-yellow .risk-title { color: #d4ac0d; }
+        .risk-orange .risk-title { color: #e67e22; }
+        .risk-red .risk-title { color: #c0392b; }
+        
+        .advice {
+            font-size: 1.15em;
+            font-weight: 600;
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 6px;
+        }
+        .param {
+            color: #555;
+            font-size: 0.95em;
+            margin: 8px 0;
+            padding-left: 15px;
+            border-left: 2px solid #bdc3c7;
+        }
+        .param strong {
+            color: #2c3e50;
+        }
+        .highlight {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin: 12px 0;
+            color: #2c3e50;
+        }
+        .note {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 0.85em;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .formula-ref {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏔️ PPV + C₃F₈ Postoperative Altitude Travel Risk Assessment</h1>
+        <p class="subtitle">Based on Boyle's Law & First-Order Kinetics | For 14% C₃F₈ Gas Tamponade</p>
+        
+        <div class="input-group">
+            <label>Surgical Center Altitude:</label>
+            <input type="number" id="h0" value="0" min="0" placeholder="e.g., 0 (Shanghai/New York)">
+            <span class="unit">meters</span>
+        </div>
+        
+        <div class="input-group">
+            <label>Maximum Route Altitude:</label>
+            <input type="number" id="h" value="2000" min="0" placeholder="e.g., 1934 (Huaihua)">
+            <span class="unit">meters</span>
+        </div>
+        
+        <div class="input-group">
+            <label>Days Post-Surgery:</label>
+            <input type="number" id="t" value="7" min="0" max="60" step="0.5" placeholder="e.g., 6">
+            <span class="unit">days</span>
+        </div>
+        
+        <button onclick="calculate()">Calculate Risk Level</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function calculatePressure(h) {
+            // ICAO Standard Atmosphere
+            return 760 * Math.pow(1 - 0.0065 * h / 288.15, 5.2561);
+        }
+        
+        function calculateVolume(t) {
+            // Gas half-lives
+            const t_half_C3F8 = 10; // days
+            const t_half_air = 2;   // days
+            
+            // Initial volumes (mL)
+            const V_C3F8_0 = 0.63;
+            const V_air_0 = 3.87;
+            
+            // Rate constants k = ln(2)/t_half
+            const k_C3F8 = Math.log(2) / t_half_C3F8;
+            const k_air = Math.log(2) / t_half_air;
+            
+            // Residual volumes
+            const V_C3F8 = V_C3F8_0 * Math.exp(-k_C3F8 * t);
+            const V_air = V_air_0 * Math.exp(-k_air * t);
+            
+            return {
+                total: V_C3F8 + V_air,
+                C3F8: V_C3F8,
+                air: V_air
+            };
+        }
+        
+        function getRiskLevel(deltaIOP) {
+            if (deltaIOP <= 6) {
+                return { 
+                    level: "Green Zone (Low Risk)", 
+                    advice: "Safe to travel. No special precautions required.",
+                    detail: "ΔIOP ≤ 6 mmHg: Minimal risk of altitude-related IOP elevation.",
+                    class: "risk-green"
+                };
+            } else if (deltaIOP <= 15) {
+                return { 
+                    level: "Yellow Zone (Moderate Risk)", 
+                    advice: "Travel with caution. Prophylactic therapy recommended (e.g., carbonic anhydrase inhibitors).",
+                    detail: "ΔIOP 6-15 mmHg: Possible symptomatic IOP elevation under high-altitude exposure.",
+                    class: "risk-yellow"
+                };
+            } else if (deltaIOP <= 25) {
+                return { 
+                    level: "Orange Zone (High Risk)", 
+                    advice: "Avoid travel if possible. If essential, strict medical supervision required.",
+                    detail: "ΔIOP 15-25 mmHg: High risk of corneal edema and visual disturbance.",
+                    class: "risk-orange"
+                };
+            } else {
+                return { 
+                    level: "Red Zone (Absolute Contraindication)", 
+                    advice: "TRAVEL STRICTLY PROHIBITED. Risk of acute glaucoma and irreversible vision loss.",
+                    detail: "ΔIOP > 25 mmHg: Critical risk of optic nerve ischemia and permanent damage.",
+                    class: "risk-red"
+                };
+            }
+        }
+        
+        function calculate() {
+            const h0 = parseFloat(document.getElementById('h0').value);
+            const h = parseFloat(document.getElementById('h').value);
+            const t = parseFloat(document.getElementById('t').value);
+            
+            if (isNaN(h0) || isNaN(h) || isNaN(t) || t < 0 || h < 0 || h0 < 0) {
+                alert("Please enter valid positive numbers");
+                return;
+            }
+            
+            // Calculate pressures
+            const P_h0 = calculatePressure(h0);
+            const P_h = calculatePressure(h);
+            
+            // Calculate gas volumes
+            const volumes = calculateVolume(t);
+            
+            // Calculate volume expansion (mL -> μL)
+            const expansionFactor = (P_h0 / P_h - 1);
+            const deltaV_uL = volumes.total * expansionFactor * 1000;
+            
+            // Ocular compliance (μL/mmHg)
+            const C = 3.115;
+            const deltaIOP = deltaV_uL / C;
+            
+            const risk = getRiskLevel(deltaIOP);
+            
+            // Display results
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = risk.class;
+            resultDiv.style.display = 'block';
+            
+            resultDiv.innerHTML = `
+                <div class="risk-title">${risk.level}</div>
+                <div style="font-size: 0.95em; color: #666; margin-bottom: 10px;">${risk.detail}</div>
+                
+                <div class="advice">
+                    <strong>Clinical Recommendation:</strong> ${risk.advice}
+                </div>
+                
+                <div class="param">
+                    <strong>Calculation Parameters:</strong><br>
+                    • Surgical center: ${h0.toFixed(0)} m (Pressure: ${P_h0.toFixed(1)} mmHg)<br>
+                    • Destination max: ${h.toFixed(0)} m (Pressure: ${P_h.toFixed(1)} mmHg)<br>
+                    • Postoperative day: ${t.toFixed(1)} days<br>
+                    • Residual gas volume: ${volumes.total.toFixed(2)} mL 
+                      (C₃F₈: ${volumes.C3F8.toFixed(2)} mL, Air: ${volumes.air.toFixed(2)} mL)<br>
+                    • Volume expansion: ${(expansionFactor * 100).toFixed(1)}% 
+                      (${deltaV_uL.toFixed(1)} μL)<br>
+                    • <span class="highlight">Predicted ΔIOP: ${deltaIOP.toFixed(1)} mmHg</span>
+                </div>
+                
+                <div class="formula-ref">
+                    Formula: ΔIOP = (V<sub>gas</sub> × (P<sub>h0</sub>/P<sub>h</sub> - 1) × 1000) / C<br>
+                    where C = 3.115 μL/mmHg
+                </div>
+                
+                <div class="note">
+                    <strong>Note:</strong> This model assumes standard 14% C₃F₈ tamponade (4.5 mL total volume). 
+                    Individual variations in ocular compliance and gas fill percentage may result in ±20% deviation. 
+                    Clinical decisions should integrate applanation tonometry and fundus examination findings.
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
